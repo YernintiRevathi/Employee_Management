@@ -6,7 +6,7 @@ import TrashIcon from './icons/TrashIcon';
 interface EmployeeTableProps {
   employees: Employee[];
   onEdit: (employee: Employee) => void;
-  onDelete: (id: string) => void;
+  onDelete: (employee: Employee) => void;
 }
 
 const EmployeeTable: React.FC<EmployeeTableProps> = ({ employees, onEdit, onDelete }) => {
@@ -42,7 +42,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ employees, onEdit, onDele
                 <button onClick={() => onEdit(employee)} className="text-highlight hover:text-teal-300 mr-4 transition">
                   <EditIcon className="w-5 h-5"/>
                 </button>
-                <button onClick={() => onDelete(employee.id)} className="text-red-500 hover:text-red-400 transition">
+                <button onClick={() => onDelete(employee)} className="text-red-500 hover:text-red-400 transition">
                   <TrashIcon className="w-5 h-5" />
                 </button>
               </td>

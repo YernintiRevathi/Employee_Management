@@ -10,14 +10,18 @@ import PlusIcon from '../components/icons/PlusIcon';
 import SearchIcon from '../components/icons/SearchIcon';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
+import ConfirmModal from '../components/ConfirmModal';
 
 const DashboardPage: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+
   const { token } = useAuth();
   const { showToast } = useToast();
 
@@ -41,17 +45,27 @@ const DashboardPage: React.FC = () => {
 
   const openAddModal = () => {
     setEditingEmployee(null);
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
   };
 
   const openEditModal = (employee: Employee) => {
     setEditingEmployee(employee);
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
+  const closeFormModal = () => {
+    setIsFormModalOpen(false);
     setEditingEmployee(null);
+  };
+  
+  const openDeleteModal = (employee: Employee) => {
+    setEmployeeToDelete(employee);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setEmployeeToDelete(null);
+    setIsDeleteModalOpen(false);
   };
 
   const handleFormSubmit = async (employeeData: NewEmployee | Employee) => {
@@ -68,26 +82,27 @@ const DashboardPage: React.FC = () => {
         await addEmployee(token, employeeData as NewEmployee);
         showToast('Employee added successfully!', 'success');
       }
-      closeModal();
+      closeFormModal();
       fetchEmployees();
     } catch (err) {
       showToast((err as Error).message, 'error');
     }
   };
   
-  const handleDelete = async (employeeId: string) => {
-    if (!token) {
-      showToast("Authentication error. Please log in again.", 'error');
+  const confirmDelete = async () => {
+    if (!token || !employeeToDelete) {
+      showToast("An error occurred. Please try again.", 'error');
       return;
     }
-    if(window.confirm('Are you sure you want to delete this employee?')) {
-      try {
-        await deleteEmployee(token, employeeId);
-        showToast('Employee deleted successfully.', 'success');
-        fetchEmployees();
-      } catch (err) {
-        showToast((err as Error).message, 'error');
-      }
+    
+    try {
+      await deleteEmployee(token, employeeToDelete.id);
+      showToast('Employee deleted successfully.', 'success');
+      fetchEmployees();
+    } catch (err) {
+      showToast((err as Error).message, 'error');
+    } finally {
+      closeDeleteModal();
     }
   };
 
@@ -115,7 +130,7 @@ const DashboardPage: React.FC = () => {
     if (filteredEmployees.length === 0 && searchTerm) {
       return <p className="text-center text-text-secondary mt-8">No employees found matching "{searchTerm}".</p>;
     }
-    return <EmployeeTable employees={filteredEmployees} onEdit={openEditModal} onDelete={handleDelete} />;
+    return <EmployeeTable employees={filteredEmployees} onEdit={openEditModal} onDelete={openDeleteModal} />;
   };
 
 
@@ -152,13 +167,20 @@ const DashboardPage: React.FC = () => {
           {renderContent()}
         </div>
       </main>
-      <Modal isOpen={isModalOpen} onClose={closeModal} title={editingEmployee ? 'Edit Employee' : 'Add New Employee'}>
+      <Modal isOpen={isFormModalOpen} onClose={closeFormModal} title={editingEmployee ? 'Edit Employee' : 'Add New Employee'}>
         <EmployeeForm 
           onSubmit={handleFormSubmit}
           initialData={editingEmployee}
-          onCancel={closeModal}
+          onCancel={closeFormModal}
         />
       </Modal>
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title="Confirm Deletion"
+        message={`Are you sure you want to delete ${employeeToDelete?.name}? This action cannot be undone.`}
+      />
     </>
   );
 };

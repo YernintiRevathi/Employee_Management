@@ -1,26 +1,25 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { login as apiLogin } from '../services/api';
 import UserIcon from '../components/icons/UserIcon';
 import KeyIcon from '../components/icons/KeyIcon';
+import { useToast } from '../hooks/useToast';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
     try {
       const { token } = await apiLogin(username, password);
       login(token);
     } catch (err) {
-      setError((err as Error).message);
+      showToast((err as Error).message, 'error');
     } finally {
       setLoading(false);
     }
@@ -70,8 +69,6 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-
-          {error && <p className="text-sm text-red-400 text-center">{error}</p>}
 
           <div>
             <button

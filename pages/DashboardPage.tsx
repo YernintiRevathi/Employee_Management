@@ -9,32 +9,31 @@ import Spinner from '../components/Spinner';
 import PlusIcon from '../components/icons/PlusIcon';
 import SearchIcon from '../components/icons/SearchIcon';
 import { useAuth } from '../hooks/useAuth';
-
+import { useToast } from '../hooks/useToast';
 
 const DashboardPage: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
   const { token } = useAuth();
+  const { showToast } = useToast();
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       if(token) {
         const data = await getEmployees(token);
         setEmployees(data);
       }
     } catch (err) {
-      setError((err as Error).message);
+      showToast((err as Error).message, 'error');
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, showToast]);
 
   useEffect(() => {
     fetchEmployees();
@@ -57,34 +56,37 @@ const DashboardPage: React.FC = () => {
 
   const handleFormSubmit = async (employeeData: NewEmployee | Employee) => {
     if (!token) {
-      setError("Authentication error. Please log in again.");
+      showToast("Authentication error. Please log in again.", 'error');
       return;
     }
 
     try {
       if ('id' in employeeData && employeeData.id) {
         await updateEmployee(token, employeeData.id, employeeData);
+        showToast('Employee updated successfully!', 'success');
       } else {
         await addEmployee(token, employeeData as NewEmployee);
+        showToast('Employee added successfully!', 'success');
       }
       closeModal();
-      fetchEmployees(); // Refetch employees to show changes
+      fetchEmployees();
     } catch (err) {
-      setError((err as Error).message);
+      showToast((err as Error).message, 'error');
     }
   };
   
   const handleDelete = async (employeeId: string) => {
     if (!token) {
-      setError("Authentication error. Please log in again.");
+      showToast("Authentication error. Please log in again.", 'error');
       return;
     }
     if(window.confirm('Are you sure you want to delete this employee?')) {
       try {
         await deleteEmployee(token, employeeId);
+        showToast('Employee deleted successfully.', 'success');
         fetchEmployees();
       } catch (err) {
-        setError((err as Error).message);
+        showToast((err as Error).message, 'error');
       }
     }
   };
@@ -107,13 +109,10 @@ const DashboardPage: React.FC = () => {
         </div>
       );
     }
-    if (error) {
-      return <div className="text-center text-red-400 bg-red-900/20 p-4 rounded-lg">{error}</div>;
-    }
     if (employees.length === 0) {
       return <p className="text-center text-text-secondary mt-8">No employees found. Add one to get started!</p>;
     }
-    if (filteredEmployees.length === 0) {
+    if (filteredEmployees.length === 0 && searchTerm) {
       return <p className="text-center text-text-secondary mt-8">No employees found matching "{searchTerm}".</p>;
     }
     return <EmployeeTable employees={filteredEmployees} onEdit={openEditModal} onDelete={handleDelete} />;

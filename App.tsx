@@ -1,9 +1,9 @@
-
 import React from 'react';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import { useAuth } from './hooks/useAuth';
 import Spinner from './components/Spinner';
+import ToastContainer from './components/ToastContainer';
 
 const App: React.FC = () => {
   const { token, loading } = useAuth();
@@ -17,9 +17,12 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-primary">
-      {token ? <DashboardPage /> : <LoginPage />}
-    </div>
+    <>
+      <div className="min-h-screen bg-primary">
+        {token ? <DashboardPage /> : <LoginPage />}
+      </div>
+      <ToastContainer />
+    </>
   );
 };
 
